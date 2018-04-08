@@ -1,0 +1,1 @@
+Here must read pdf file or text and return array of strings of data in file 
