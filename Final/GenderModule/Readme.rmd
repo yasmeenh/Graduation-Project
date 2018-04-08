@@ -1,0 +1,1 @@
+This Module must take Characters Part and return actors and their kinds ( male or female )
