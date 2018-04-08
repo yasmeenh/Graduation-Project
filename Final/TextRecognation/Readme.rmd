@@ -1,0 +1,1 @@
+This must take all text in play and return the structure of play (Body, Characters, Caution,Time,Play name and Place)
