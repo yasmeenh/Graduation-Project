@@ -4,9 +4,12 @@ Created on Sun Apr  8 02:20:41 2018
 
 @author: Hager - Lab
 """
+from prepareLearning import prepare
 from GenderModule.genderExtract import GenderDetect
+from AgeModule.AgeExtract import AgeDetect
+from EmotionModule.EmotionExtract import EmotionDetect
 from TextRecognation.TextRecognation import TextRecognation
-s="TextRecognation/Kinds/10,000 CIGARETTES.txt"
+s="TextRecognation/Kinds/Lighting rod man.txt"
 if s.lower().endswith('.txt'):#check this file is text document
     file=open(s, "r")#open text file
     Data=file.read() #read play
@@ -17,14 +20,31 @@ if s.lower().endswith('.txt'):#check this file is text document
     Fname,Body,Characters,Time,Place,Caution,Scene,Note,Reqs,props=TextRecognation.init(s)
     Names=[]
     Gender=[]
-    Names,Gender=GenderDetect.init(Characters)
-    print(Characters)
+    Age=[]
+    Said=[]
+    Sentence=[]
+    Names,Gender,Age=GenderDetect.init(Characters)
+    Said,Sentence,SemiSentence=prepare.__init__(Body,Names,Fname)
+    Age=AgeDetect.__init__(Names,Age, Said,SemiSentence)
+    Emotion=EmotionDetect.init(SemiSentence)
+    i=0
+    print(Emotion)
+#    emotions 1--> angry   2-->fear   3-->Happy   4-->neutral   5-->sad
+    for line in  SemiSentence:
+        print(str(Emotion[i]) + ' : ' + SemiSentence[i])
+        i+=1   
     print()
     print()
     print(Names)   
     print()
     print()         
-    print(Gender)
+    print(Gender)      
+    print()
+    print()         
+    print(Age)
+    
+    
+    
 #    print(Body)
 #    print()
 #    print()
