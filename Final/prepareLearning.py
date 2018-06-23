@@ -27,7 +27,9 @@ class prepare:
     said=[]
     sentence=[]
     sentences=[]
-
+    BetweenBraces=[]
+    BetweenBracesLines=[]
+    
 #==============================================================================
 #   setSentences Function :- Input : it takes a sentence and assigns it to the 
 #   sentence of the class.
@@ -40,6 +42,8 @@ class prepare:
        cls.said=[]
        cls.sentence=[]
        cls.sentences=[]
+       cls.BetweenBraces=[]
+       cls.BetweenBracesLines=[]
 #       print(body)
        fname=""
        i=0
@@ -51,10 +55,19 @@ class prepare:
            i+=1
 #       print(fname)
        i=0
+       j=0
        bracket=0
        for line in body:
 #           print(line)
-           if bracket==1 or line.find(Fname)!=-1 or line.find(fname)!=-1 or line[0]=='[' or line[len(line)-1]==']' or line[0]=='(' or line[len(line)-1]==')':
+           if line.find(Fname)!=-1 or line.find(fname)!=-1 :
+               continue
+           if bracket==1 or line[0]=='[' or line[len(line)-1]==']' or line[0]=='(' or line[len(line)-1]==')':
+               if bracket==0:
+                   cls.BetweenBraces.append(line)
+                   cls.BetweenBracesLines.append(len(cls.said))
+                   j+=1
+               else:
+                   cls.BetweenBraces[j-1]+=' '+ line
                if line[0]=='['  or line[0]=='(' :
                    bracket=1
                if line[len(line)-1]==']'  or line[len(line)-1]==')' :
@@ -74,14 +87,14 @@ class prepare:
                    cw=c.split()
                    a=len(c)
                    if line.find(c)!=-1 and cw[0]==words[0]:
-                       cls.lines.append(cls.strip_punctuation(cls.decontracted(line[a+1:])))
+                       cls.lines.append(cls.decontracted(line[a+1:]))
                        cls.said.append(c)
         #               print(cls.lines[i])
                        i+=1
                        k=1
                        break
                    elif cw[0]==words[0] or (len(cw)>1 and cw[1]==words[0]):
-                       cls.lines.append(cls.strip_punctuation(cls.decontracted(line[len(words[0])+1:])))
+                       cls.lines.append(cls.decontracted(line[len(words[0])+1:]))
                        cls.said.append(c)
         #               print(cls.lines[i])
                        i+=1
@@ -97,7 +110,7 @@ class prepare:
        i=0
        for line in cls.lines:
             cls.sentences.append(cls.lines[i])
-            cls.lines[i]=word_tokenize(cls.lines[i])
+            cls.lines[i]=word_tokenize(cls.strip_punctuation(cls.lines[i]))
 #            print(cls.lines[i])
             i+=1
        cls.lines=cls.stem(cls.lemmatizer(cls.stopWords(cls.lines)))
@@ -107,7 +120,9 @@ class prepare:
 #           print(cls.said[i]+ ' : ' + cls.sentence[i])
            i+=1
 #       for line in cls.lines:
-       return cls.said,cls.sentences,cls.sentence
+       print('cls.BetweenBracesLines')
+       print(cls.BetweenBracesLines)
+       return cls.said,cls.sentences,cls.sentence,cls.BetweenBraces,cls.BetweenBracesLines
 #            print(line)
          
         
