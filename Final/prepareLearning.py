@@ -57,7 +57,7 @@ class prepare:
        i=0
        j=0
        bracket=0
-       for line in body:
+       for line in body: ##el mafrod lo el line be-contain ] y2of
 #           print(line)
            if line.find(Fname)!=-1 or line.find(fname)!=-1 :
                continue
@@ -70,7 +70,7 @@ class prepare:
                    cls.BetweenBraces[j-1]+=' '+ line
                if line[0]=='['  or line[0]=='(' :
                    bracket=1
-               if line[len(line)-1]==']'  or line[len(line)-1]==')' :
+               if ']' in line or ')' in line:
                    bracket=0
                continue
            if line.upper() == line and line[1]==' ' and line[1]==line[3] :
