@@ -5,15 +5,14 @@ Created on Mon Jun 18 16:17:56 2018
 @author: technology_laptop
 """
 from nltk.stem import PorterStemmer
-from nltk.tokenize import sent_tokenize, word_tokenize
-import difflib
+#import nltk
 import pyaudio  
-import wave 
+import wave
+import contextlib 
 import pandas as pd
 from pandas import ExcelWriter
 from pandas import ExcelFile
-from prepareLearning import prepare
-from TextRecognation.TextRecognation import TextRecognation
+import numpy as np
 
 ##function to find the words between 2 words
 def find_between( s, first, last ):
@@ -23,10 +22,11 @@ def find_between( s, first, last ):
         return s[start:end]
     except ValueError:
         return ""
+
 ##function to read the audio file
 def play_audio(s):
    chunk = 1024
-   f = wave.open(r"E:/GP/Graduation-Project-master (1)/Graduation-Project-master/Final/EnvironmentModule/audio/"+s,"rb") 
+   f = wave.open(r"EnvironmentModule/audio/"+s,"rb")
   #instantiate PyAudio 
    p = pyaudio.PyAudio()
   #open stream 
@@ -47,190 +47,157 @@ def play_audio(s):
    stream.close()  
 
   #close PyAudio 
-   p.terminate()    
+   p.terminate()
+
+def calculate_duration(fname):
+  with contextlib.closing(wave.open(fname,'r')) as f:
+    frames = f.getnframes()
+    rate = f.getframerate()
+    duration = frames / float(rate)
+    return duration
 
 #functions to return arrays for integration
-def get_audio_file_name(voices_names_map,words,file_name,continuous,index):
+def get_audio_file_name(said,character_gender_map,voices_names_map,words,file_name,continuous,ind,MaleOrFemale,words_count):
   ps = PorterStemmer()
-  ##make 3 arrays :
   environment_file_name=[]  #it is for the names of sounds files that will be displayed
   continous_or_not=[]      #if the element is 0->the sound is not continous, if it is 1->the sound is continous, if it is 2->the sound is continous with delay
-  sound_index=[] #when to be displayed 
-  word1_rows=[]
-  word2_rows=[]
-  intersection=[]
+  sound_ind=[] #when to be displayed
+  durations=[]
+  arr1=np.zeros(160)
+  arr2=[]
+  between_quotes=find_between(words,'"', '"')
+  if between_quotes !="":
+   print('between_quotes : '+between_quotes)
+   print ('words.find')
+   hear_index=words.find('hear')
+   print (hear_index)
+   if hear_index!=-1:
+       quote_index=words.find('"')
+       if quote_index > hear_index+4:
+           environment_file_name.append(between_quotes)
+           continous_or_not.append(9)
+           sound_ind.append(ind)
+           durations.append(1)
+  #make stemming for words
+  words=words.split(" ")
+  ##make 3 arrays :
   w=0
-  value1=False
-  door_word=False
-  door_word1=False
-  for w in words.split(" "):
+  for w in words:
    stemmed_word=ps.stem(w)
-   if stemmed_word=='door':
-     door_word=True 
-   
    if stemmed_word in voices_names_map:
-    
-    if not value1:   ##check there is no environment words before
-        if door_word:
-            door_word1=True   #door word is the first one
-        ##hena lw el kelma l word count bta3ha be 1 yb2a ysh8lha 3la tool lo msh keda yb2a ha5znha
-        if voices_names_map[stemmed_word][0]==-1:
-            #play the audio
-           #print('mennnnnnnnnna')
-           AudioFileName=file_name[voices_names_map[stemmed_word][1]]
-           #play_audio(AudioFileName)
-           environment_file_name.append(AudioFileName)
-           continous_or_not.append(continuous[voices_names_map[stemmed_word][1]])
-           if index==-1:
-             sound_index.append(index)
-           if index!=-1:
-              sound_index.append(index)
-        else:
-          word1=stemmed_word  
-          word1_rows=voices_names_map[stemmed_word]
-          value1=True
-    else: 
-        if voices_names_map[stemmed_word][0]==-1:
-            #play the audio
-           #print('mennnnnnnnnna')
-           AudioFileName=file_name[voices_names_map[stemmed_word][1]]
-           #play_audio(AudioFileName)
-           environment_file_name.append(AudioFileName)
-           continous_or_not.append(continuous[voices_names_map[stemmed_word][1]])
-           if index==-1:
-             sound_index.append(index)
-           if index!=-1:
-              sound_index.append(index)
-        else: 
-           ##it is the second word
-           ##check that word2!=word1
-           if stemmed_word!=word1:
-            word2_rows=voices_names_map[stemmed_word]
-   if word2_rows:
-    intersection=list(set(word1_rows).intersection(word2_rows))
-    if intersection:
-     if not door_word:   
-      value1=False
-      word1_rows=[]
-     else:
-      if not door_word1: #this means that word "door" comes second
-        word1_rows=[]
-        word1_rows=word2_rows
-        
-     word2_rows=[]
-     if len(intersection)>1:
-      h=0
-      while h<len(intersection):
-       if intersection[h]==-2:
-         h=h+1
-         continue
-       else:
-        intersection_index=intersection[h]
-        AudioFileName=file_name[intersection_index] ##to not get the word_counts as intersection
-        
-        environment_file_name.append(AudioFileName)
-        continous_or_not.append(continuous[intersection_index])
-        if index==-1:
-             sound_index.append(index)
-        if index!=-1:
-           sound_index.append(index)
-           
-        break
-      #AudioFileName=FileName[D2[s1[w]][0]]
-      #print(AudioFileName)
-      #play_audio(AudioFileName)
-     else:             #new addedddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
-      value1=False    #delete word1_rows array and word2_rows array as they don't come after each other-- special cases --> sea waves,door
-      word1_rows=[]
-      word2_rows=[]
-   #w=w+1
-  if not intersection:
-     #print('ghjkl144')
-     value1=False    #delete word1_rows array and word2_rows array as they don't come after each other-- special cases --> sea waves,door
-     word1_rows=[]
-     word2_rows=[]
-  return environment_file_name,continous_or_not,sound_index 
+    if stemmed_word not in arr2:
+        y=0
+        while  y<len(voices_names_map[stemmed_word]):
+          arr1[voices_names_map[stemmed_word][y]]+=1
+          arr2.append(stemmed_word)
+          if arr1[voices_names_map[stemmed_word][y]]==words_count[voices_names_map[stemmed_word][y]]:
+              if MaleOrFemale[voices_names_map[stemmed_word][y]]==1 or MaleOrFemale[voices_names_map[stemmed_word][y]]==0:
+               if ind==len(said):
+                AudioFileName=file_name[character_gender_map[said[ind-1]]+voices_names_map[stemmed_word][y]]
+               else:
+                AudioFileName=file_name[character_gender_map[said[ind]]+voices_names_map[stemmed_word][y]] 
+               environment_file_name.append(AudioFileName)
+               continous_or_not.append(continuous[voices_names_map[stemmed_word][y]])
+               sound_ind.append(ind)
+               
+               if AudioFileName!='_':
+                durations.append(calculate_duration('EnvironmentModule/audio/'+AudioFileName))
+               else:
+                durations.append(0) 
+               break
+              else: 
+               if voices_names_map[stemmed_word][y]==44:
+                   if arr2.index('they') < arr2.index('laugh'):
+                       AudioFileName=file_name[voices_names_map[stemmed_word][y]]
+                   else:
+                       continue
+               AudioFileName=file_name[voices_names_map[stemmed_word][y]]
+               if '.wav' in AudioFileName:
+                   play_audio(AudioFileName)
+               environment_file_name.append(AudioFileName)
+               continous_or_not.append(continuous[voices_names_map[stemmed_word][y]])
+               sound_ind.append(ind)
+               if AudioFileName!='_':
+                durations.append(calculate_duration('EnvironmentModule/audio/'+AudioFileName))
+               else:
+                durations.append(0)
+               if stemmed_word=='laugh':
+                   break
+          y+=1
+  
 
-
+  return environment_file_name,continous_or_not,sound_ind,durations 
 
 class EnvironmentDetect:
     
     @classmethod
-    def __init__(cls,scene,place,BetweenBraces,BetweenBracesLines):  ##el mafrood el parameters de hya elly mb3ota mn bara??????????
-        #define stream chunk   
-        chunk = 1024
+    def __init__(cls,Names,Gender,Said,scene,place,BetweenBraces,BetweenBracesLines):  ##el mafrood el parameters de hya elly mb3ota mn bara??????????
         ##definitions
-        voicename_row_map={}
-        environment_map={}      
-        word1_rows=[]
-        word2_rows=[]
-        intersection=[] ##intersection between word1_rows and word2_rows 
-        words=[] ##it is an array for words that may be environment  
-        ps = PorterStemmer()
+        voicename_row_map={}  
         audio_files=[]
         continuous_or_not=[]
         audio_index=[]
         ee=[]
         dd=[]
         ff=[]
-         ##Reading the meta_data file 
+        duration=[]
+        ##create map of characters names and genders--> key-> name, value-> gender 0->female, 1->male
+        l=0
+        character_gender_map={}
+        while l<len(Names):
+            if Gender[l]=='male':
+             character_gender_map[Names[l]]=1
+            else:
+             character_gender_map[Names[l]]=0
+            l=l+1
         df = pd.read_excel('E:/GP/Graduation-Project-master (1)/Graduation-Project-master/Final/EnvironmentModule/Data/EnvironmentData.xlsx', sheetname='sheet1')
-        #print('ghjkl2')
         VoiceNames = df['category']
-        words_count = df['words count'] ##8alabn msh ha7tgha
         FileName = df['filename']
-        continuous = df['continuous'] ##check if the voice is continuous or not 0 for not continuous, 1 for continuous
-        #print('ghjkl3')
-        #making the map
-        ##loop to make the map
+        continuous = df['continuous'] ##check if the voice is continuous or not 0 for not continuous, 1 for continuous,2 continuous with delay
+        MaleOrFemale=df['m_or_f']
+        words_count = df['words count']
         i=0
+
         while i < len(VoiceNames):   
-            voicname=VoiceNames[i].split( "_" ) #this is for voicenames that contain more than one word
-            #print('ghjkl4')
-            j=0
-            words_count1=len(voicname)
-            while j < words_count1:
-              stemmed_voicname=ps.stem(voicname[j])
-              if stemmed_voicname in voicename_row_map:
-               #el mafrod a-add 3la list 3la tool
-               voicename_row_map[stemmed_voicname].append(i)
-               #print('ghjkl5')
-              else: 
-               #print('ghjkl')
-               #el mafrod hena a-create l list 
-               ##put word counts as the first element in the value list for each key
-               voicename_row_map.setdefault(stemmed_voicname, []).append(-words_count1)
-               voicename_row_map[stemmed_voicname].append(i)
-               #print('ghjkl6')
-              j=j+1
-            i = i + 1
-    
+          voicname=VoiceNames[i].split( "_" ) #this is for voicenames that contain more than one word
+          j=0
+          words_count1=len(voicname)
+          while j < words_count1:
+            if voicname[j] in voicename_row_map:
+             voicename_row_map[voicname[j]].append(i)
+            else: 
+             ##put word counts as the first element in the value list for each key
+             voicename_row_map.setdefault(voicname[j], []).append(i)  
+            j+=1
+          i+=1
         if scene:
-          scene=scene.split(" ") ##we amshy 3lihm
-          ee,dd,ff=get_audio_file_name(voicename_row_map,scene,FileName,continuous,-1)
-          audio_files.extend(ee)
-          continuous_or_not.extend(dd)
-          audio_index.extend(ff)
+          i=0
+          while i<len(scene):
+            scene[i].split(" ")
+            ee,dd,ff,qq=get_audio_file_name(Said,character_gender_map,voicename_row_map,scene[i],FileName,continuous,0,MaleOrFemale,words_count)
+            audio_files.extend(ee)
+            continuous_or_not.extend(dd)
+            audio_index.extend(ff)
+            duration.extend(qq)
+            i=i+1  
           
         if place:
           i=0
           while i<len(place):
             place[i].split(" ")
-            #place=place.split(" ")
-            ee,dd,ff=get_audio_file_name(voicename_row_map,place[i],FileName,continuous,-1)
+            ee,dd,ff,qq=get_audio_file_name(Said,character_gender_map,voicename_row_map,place[i],FileName,continuous,0,MaleOrFemale,words_count)
             audio_files.extend(ee)
             continuous_or_not.extend(dd)
             audio_index.extend(ff)
-            
+            duration.extend(qq)
             i=i+1
         k=0
         while k<len(BetweenBraces):
-         BetweenBraces[k]=prepare.strip_punctuation(BetweenBraces[k])  
          BetweenBraces[k].split(" ")
-         ee,dd,ff=get_audio_file_name(voicename_row_map,BetweenBraces[k],FileName,continuous,BetweenBracesLines[k]) #BetweenBracesLines[k]=el index bta3 el kalm dah
+         ee,dd,ff,qq=get_audio_file_name(Said,character_gender_map,voicename_row_map,BetweenBraces[k],FileName,continuous,BetweenBracesLines[k],MaleOrFemale,words_count) #BetweenBracesLines[k]=el index bta3 el kalm dah
          audio_files.extend(ee)
          continuous_or_not.extend(dd)
          audio_index.extend(ff)
+         duration.extend(qq)
          k=k+1
-        return  audio_files,continuous_or_not,audio_index
-    
+        return  audio_files,continuous_or_not,audio_index,duration
